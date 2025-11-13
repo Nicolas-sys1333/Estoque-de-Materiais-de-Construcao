@@ -29,7 +29,7 @@ Criação de um estoque com diferentes níveis de acesso e geração de relátor
 
 <h1>🔗 Tecnologias Utilizadas</h1>
 
- [![My Skills](https://skillicons.dev/icons?i=py,flask,vscode,sqlite,github,git&perline=5)](https://skillicons.dev)
+ [![My Skills](https://skillicons.dev/icons?i=py,flask,vscode,sqlite,github,git&perline=6)](https://skillicons.dev)
 
 
 <h1>🎲 Banco de Dados</h1>
