@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Estoque{% endblock %}
+
+{% block content %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if pedidos_pendentes_count > 0 %}
+        <div class="alert alert-warning" role="alert">
+          <h4 class="alert-heading"><i class="fas fa-inbox"></i> Novos Pedidos para Aprovação!</h4>
+          <p>Existem <strong>{{ pedidos_pendentes_count }}</strong> pedido(s) aguardando sua aprovação.</p>
+          <hr>
+          <a href="{{ url_for('gerenciar_pedidos') }}" class="btn btn-sm btn-outline-dark">
+            Ir para a página de aprovação <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+        {% endif %}
+
+        {% if itens_baixo_estoque %}
+        <div class="alert alert-danger" role="alert">
+          <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Alerta de Estoque Baixo!</h4>
+          <p>Os seguintes itens atingiram o nível mínimo de estoque (50 unidades ou menos):</p>
+          <hr>
+          <ul class="list-unstyled">
+            {% for item in itens_baixo_estoque %}
+              <li><strong>{{ item.nome }}</strong> - Quantidade atual: <span class="badge badge-danger">{{ item.quantidade }}</span></li>
+            {% endfor %}
+          </ul>
+          <p class="mb-0">Por favor, considere fazer um pedido de compra ou ajustar o estoque.</p>
+        </div>
+        {% endif %}
+
+        <div class="mb-4">
+            <h1>Dashboard Principal</h1>
+            <p class="lead text-muted">Selecione uma das opções abaixo para começar.</p>
+        </div>
+
+        <!-- Seção do Administrador -->
+        {% if usuario.role == 'administracao' %}
+        <div class="card mt-4 mb-5">
+            <div class="card-header">
+                Painel do Administrador
+            </div>
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <!-- Seção de Gerenciamento de Usuários -->
+                    <div class="col-md-4 text-center">
+                        <p class="lead">Controle de Acesso</p>
+                        <div class="btn-group-vertical btn-block">
+                            <a href="{{ url_for('gerenciar_pedidos') }}" class="btn btn-warning d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-inbox mr-2"></i>Aprovar Pedidos</span>
+                                <span class="badge badge-light">{{ pedidos_pendentes_count }}</span>
+                            </a>
+                            <a href="{{ url_for('gerenciar_usuarios') }}" class="btn btn-secondary mt-1"><i class="fas fa-users-cog mr-2"></i>Gerenciar Usuários</a>
+                        </div>
+                        <p class="lead mt-3">Catálogos</p>
+                        <div class="btn-group-vertical btn-block">
+                            <a href="{{ url_for('gerenciar_descricoes') }}" class="btn btn-secondary"><i class="fas fa-list-alt mr-2"></i>Gerenciar Descrições</a>
+                            <a href="{{ url_for('gerenciar_obras') }}" class="btn btn-secondary mt-1"><i class="fas fa-hard-hat mr-2"></i>Gerenciar Obras</a>
+                        </div>
+                    </div>
+
+                    <!-- Seção de Gerenciamento de Dados -->
+                    <div class="col-md-8 border-left pl-4">
+                        <p class="lead text-center">Dados do Estoque</p>
+                        <form action="{{ url_for('importar_excel') }}" method="post" enctype="multipart/form-data" class="d-flex justify-content-center align-items-center mb-3">
+                            <div class="custom-file w-auto flex-grow-1 mr-2">
+                                <input type="file" class="custom-file-input" id="planilha" name="planilha" required>
+                                <label class="custom-file-label" for="planilha">Importar catálogo...</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-file-import mr-1"></i> Importar</button>
+                        </form>
+                        <a href="{{ url_for('exportar_excel') }}" class="btn btn-success btn-block"><i class="fas fa-file-export mr-2"></i>Exportar Saldo para Excel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Ações Principais como Cards -->
+        <div class="row mt-4">
+            <div class="col-md-4 mb-4">
+                <a href="{{ url_for('ver_estoque') }}" class="card-link">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="fas fa-warehouse fa-3x mb-3 text-primary"></i>
+                            <h5 class="card-title">Consultar Estoque</h5>
+                            <p class="card-text text-muted">Visualize o saldo atual de todos os materiais.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% if usuario.role == 'administracao' %}
+            <div class="col-md-4 mb-4">
+                <a href="{{ url_for('registrar_movimentacao') }}" class="card-link">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="fas fa-exchange-alt fa-3x mb-3 text-success"></i>
+                            <h5 class="card-title">Entrada Direta</h5>
+                            <p class="card-text text-muted">Registre entradas de materiais que não necessitam de pedido.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% else %}
+            <div class="col-md-4 mb-4">
+                <a href="{{ url_for('listar_obras_public') }}" class="card-link">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="fas fa-hard-hat fa-3x mb-3 text-warning"></i>
+                            <h5 class="card-title">Acessar Obras</h5>
+                            <p class="card-text text-muted">Visualize obras e solicite materiais.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endif %}
+            <div class="col-md-4 mb-4">
+                <a href="{{ url_for('ver_relatorios') }}" class="card-link">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="fas fa-chart-line fa-3x mb-3 text-info"></i>
+                            <h5 class="card-title">Ver Relatórios</h5>
+                            <p class="card-text text-muted">Acesse indicadores de consumo e saldo.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+{% endblock %}

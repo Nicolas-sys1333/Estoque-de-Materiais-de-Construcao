@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Obra: {{ obra.nome }}{% endblock %}
+
+{% block content %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0">{{ obra.nome }}</h1>
+            <p class="lead text-muted">{{ obra.localizacao }}</p>
+        </div>
+        <a href="{{ url_for('exportar_relatorio_obra_pdf', id=obra.id) }}" class="btn btn-outline-danger"><i class="fas fa-file-pdf mr-2"></i>Exportar Relatório</a>
+    </div>
+    <hr>
+
+    <div class="row">
+        <!-- Coluna de Pedido -->
+        <div class="col-md-4">
+            <h3><i class="fas fa-paper-plane"></i> Solicitar Material</h3>
+            <div class="card">
+                <div class="card-body">
+                    <form action="{{ url_for('detalhes_obra', id=obra.id) }}" method="post">
+                        <div class="form-group">
+                            <label for="item_id">Item</label>
+                            <select name="item_id" class="form-control" required>
+                                <option value="" disabled selected>Selecione um item...</option>
+                                {% for item in itens_estoque %}
+                                    <option value="{{ item.id }}">{{ item.nome }} (Disponível: {{ item.quantidade }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantidade">Quantidade</label>
+                            <input type="number" name="quantidade" class="form-control" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="justificativa">Justificativa</label>
+                            <textarea name="justificativa" class="form-control" rows="2" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Enviar Pedido</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna de Histórico -->
+        <div class="col-md-8">
+            <h3><i class="fas fa-history"></i> Materiais Enviados para a Obra</h3>
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Item</th>
+                        <th>Quantidade</th>
+                        <th>Liberado por</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materiais %}
+                    <tr>
+                        <td>{{ material.data.split(' ')[0] }}</td>
+                        <td>{{ material.item_nome }}</td>
+                        <td>{{ material.quantidade }}</td>
+                        <td>{{ material.usuario_nome }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nenhum material foi enviado para esta obra ainda.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

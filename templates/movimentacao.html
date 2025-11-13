@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Movimentação{% endblock %}
+
+{% block content %}
+        <h1>Registrar Movimentação de Estoque</h1>
+        <div class="card mt-4">
+            <div class="row no-gutters">
+                <!-- Coluna do Formulá-->
+                <div class="col-md-7 border-right">
+                    <div class="card-header">
+                        Nova Movimentação Direta
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('registrar_movimentacao') }}" method="post">
+                            <div class="form-group">
+                                <label for="item_id">Item</label>
+                                <select name="item_id" id="item_id" class="form-control" required>
+                                    <option value="" disabled selected>Selecione um item...</option>
+                                    {% for item in itens %}
+                                        <option value="{{ item.id }}">{{ item.nome }} (Disponível: {{ item.quantidade }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="tipo">Tipo de Movimentação</label>
+                                    <select name="tipo" id="tipo" class="form-control" required>
+                                        {% if pode_entrar %}
+                                        <option value="entrada">Entrada</option>
+                                        {% endif %}
+                                        {% if pode_sair %}
+                                        <option value="saida">Saída</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="quantidade">Quantidade</label>
+                                    <input type="number" name="quantidade" id="quantidade" class="form-control" min="1" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="observacao">Observação (Opcional)</label>
+                                <input type="text" name="observacao" id="observacao" class="form-control" placeholder="Ex: Obra X, Projeto Y, Nota Fiscal 123">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Registrar</button>
+                            <a href="{{ url_for('ver_estoque') }}" class="btn btn-secondary">Cancelar</a>
+                        </form>
+                    </div>
+                </div>
+                <!-- Coluna do Histórico -->
+                <div class="col-md-5">
+                    <div class="card-header bg-light">
+                        <i class="fas fa-history"></i> Últimas 5 Movimentações
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            {% for mov in ultimas_movimentacoes %}
+                                <li class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">
+                                            {% if mov.tipo == 'entrada' %}
+                                                <span class="badge badge-success">Entrada</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">Saída</span>
+                                            {% endif %}
+                                            {{ mov.item_nome }}
+                                        </h6>
+                                        <small>{{ mov.data.split(' ')[0] }}</small>
+                                    </div>
+                                    <p class="mb-1">Qtd: <strong>{{ mov.quantidade }}</strong> | Por: <strong>{{ mov.usuario_nome }}</strong></p>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item text-muted">Nenhuma movimentação recente.</li>
+                            {% endfor %}
+                        </ul>
+                        <div class="text-center mt-3">
+                             <a href="{{ url_for('ver_relatorios') }}" class="btn btn-sm btn-outline-primary">Ver Histórico Completo</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}

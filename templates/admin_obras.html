@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Obras{% endblock %}
+
+{% block content %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-4">
+            <h3><i class="fas fa-hard-hat"></i> Nova Obra</h3>
+            <div class="card">
+                <div class="card-body">
+                    <form action="{{ url_for('gerenciar_obras') }}" method="post">
+                        <div class="form-group">
+                            <label for="nome">Nome da Obra</label>
+                            <input type="text" name="nome" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="localizacao">Localização</label>
+                            <input type="text" name="localizacao" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Criar Obra</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h3><i class="fas fa-clipboard-list"></i> Obras Cadastradas</h3>
+            <ul class="list-group">
+                {% for obra in obras %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ obra.nome }}</strong><br>
+                            <small class="text-muted">{{ obra.localizacao }}</small>
+                        </div>
+                        <a href="{{ url_for('editar_obra', id=obra.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="list-group-item">Nenhuma obra cadastrada.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

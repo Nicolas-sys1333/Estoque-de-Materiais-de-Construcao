@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Item do Estoque{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h3><i class="fas fa-edit"></i> Editar Item: {{ item.nome }}</h3>
+            <div class="card">
+                <div class="card-body">
+                    <form action="{{ url_for('editar_item', id=item.id) }}" method="post">
+                        <div class="form-group">
+                            <label for="nome">Nome do Produto</label>
+                            <input type="text" name="nome" class="form-control" value="{{ item.nome }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="descricao_id">Descrição</label>
+                            <select name="descricao_id" class="form-control" required>
+                                {% for d in descricoes %}
+                                <option value="{{ d.id }}" {% if d.id == item.descricao_id %}selected{% endif %}>
+                                    {{ d.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="preco_unitario">Preço Unitário (R$)</label>
+                            <input type="text" name="preco_unitario" class="form-control" value="{{ '%.2f'|format(item.preco_unitario|float) }}" required>
+                        </div>
+                        <p class="text-muted small">A quantidade do item só pode ser alterada através de movimentações.</p>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('ver_estoque') }}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

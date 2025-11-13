@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Saldo de Estoque{% endblock %}
+
+{% block content %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1>Saldo de Estoque</h1>
+            <div>
+                <input type="text" id="filtroTabela" class="form-control d-inline-block w-auto" placeholder="Filtrar itens...">
+                {% if auth.tem_permissao(usuario.role, 'cadastrar_item') %}
+                <button type="button" class="btn btn-primary ml-2" data-toggle="modal" data-target="#modalAdicionarItem">
+                    <i class="fas fa-plus-circle mr-1"></i> Adicionar Novo Produto
+                </button>
+                {% endif %}
+                {% if usuario.role == 'administracao' %}
+                <a href="{{ url_for('registrar_movimentacao') }}" class="btn btn-success ml-2"><i class="fas fa-dolly-flatbed mr-1"></i> Entrada Direta</a>
+                {% else %}
+                <button type="button" class="btn btn-info ml-2" data-toggle="modal" data-target="#modalPedirCompra">
+                    <i class="fas fa-shopping-cart mr-1"></i> Pedir Compra
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if not itens %}
+            <div class="alert alert-warning">Nenhum item encontrado no estoque.</div>
+        {% else %}
+            <table class="table table-striped table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Descrição</th>
+                        <th class="text-right">Quantidade</th>
+                        <th class="text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela">
+                    {% for item in itens %}
+                    <tr class="{% if usuario.role == 'administracao' and item.quantidade <= 50 %}table-danger{% endif %}">
+                        <td>{{ item.nome }}</td>
+                        <td>{{ item.descricao }}</td>
+                        <td class="text-right">
+                            {{ item.quantidade }}
+                            {% if usuario.role == 'administracao' and item.quantidade <= 50 %}
+                                <i class="fas fa-exclamation-triangle text-danger ml-2" title="Estoque baixo!"></i>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            {% if usuario.role == 'administracao' %}
+                            <a href="{{ url_for('editar_item', id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+<!-- Modal Adicionar Item -->
+<div class="modal fade" id="modalAdicionarItem" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Adicionar Novo Produto ao Estoque</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form action="{{ url_for('adicionar_novo_item') }}" method="post">
+          <div class="modal-body">
+                <div class="form-group">
+                    <label for="nome">Nome do Produto</label>
+                    <input type="text" name="nome" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="descricao_id">Descrição</label>
+                    <select name="descricao_id" class="form-control" required>
+                        <option value="" disabled selected>Selecione uma descrição...</option>
+                        {% for d in descricoes %}
+                        <option value="{{ d.id }}">{{ d.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="preco_unitario">Preço Unitário (R$)</label>
+                        <input type="text" name="preco_unitario" class="form-control" placeholder="Ex: 12,50" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="quantidade">Quantidade Inicial</label>
+                        <input type="number" name="quantidade" class="form-control" value="0" min="0" required>
+                    </div>
+                </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Produto</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Pedir Compra -->
+<div class="modal fade" id="modalPedirCompra" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Solicitar Compra de Material</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form action="{{ url_for('pedir_compra_item') }}" method="post">
+          <div class="modal-body">
+                <div class="form-group">
+                    <label for="item_id">Item</label>
+                    <select name="item_id" class="form-control" required>
+                        <option value="" disabled selected>Selecione um item...</option>
+                        {% for item in itens %}
+                        <option value="{{ item.id }}">{{ item.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="quantidade">Quantidade a Comprar</label>
+                    <input type="number" name="quantidade" class="form-control" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="justificativa">Justificativa</label>
+                    <textarea name="justificativa" class="form-control" rows="2" required></textarea>
+                </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Enviar Pedido de Compra</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+    <script>
+        // Script simples para filtrar a tabela em tempo real
+        document.getElementById('filtroTabela').addEventListener('keyup', function() {
+            let filtro = this.value.toLowerCase();
+            let tabela = document.getElementById('corpoTabela');
+            let linhas = tabela.getElementsByTagName('tr');
+
+            for (let i = 0; i < linhas.length; i++) {
+                let textoLinha = linhas[i].textContent || linhas[i].innerText;
+                if (textoLinha.toLowerCase().indexOf(filtro) > -1) {
+                    linhas[i].style.display = "";
+                } else {
+                    linhas[i].style.display = "none";
+                }
+            }
+        });
+    </script>
+{% endblock %}

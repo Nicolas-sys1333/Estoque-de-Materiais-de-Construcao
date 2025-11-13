@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Obras em Andamento{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Obras em Andamento</h1>
+        <input type="text" id="filtroObras" class="form-control w-25" placeholder="Buscar obra por nome ou local...">
+    </div>
+
+    <div class="list-group" id="listaObras">
+        {% for obra in obras %}
+            <a href="{{ url_for('detalhes_obra', id=obra.id) }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ obra.nome }}</h5>
+                </div>
+                <p class="mb-1 text-muted">{{ obra.localizacao }}</p>
+            </a>
+        {% else %}
+            <div class="alert alert-info">Nenhuma obra cadastrada no momento.</div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.getElementById('filtroObras').addEventListener('keyup', function() {
+            let filtro = this.value.toLowerCase();
+            let lista = document.getElementById('listaObras');
+            let itens = lista.getElementsByTagName('a');
+
+            for (let i = 0; i < itens.length; i++) {
+                let textoItem = itens[i].textContent || itens[i].innerText;
+                if (textoItem.toLowerCase().indexOf(filtro) > -1) {
+                    itens[i].style.display = "";
+                } else {
+                    itens[i].style.display = "none";
+                }
+            }
+        });
+    </script>
+{% endblock %}

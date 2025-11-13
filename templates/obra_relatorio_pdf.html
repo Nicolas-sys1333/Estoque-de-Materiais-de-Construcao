@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Materiais - {{ obra.nome }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .header p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            color: #555;
+        }
+        h2 {
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Relatório de Materiais da Obra</h1>
+        <p><strong>Obra:</strong> {{ obra.nome }}</p>
+        <p><strong>Localização:</strong> {{ obra.localizacao }}</p>
+    </div>
+
+    <h2>Histórico de Materiais Enviados</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Item</th>
+                <th>Quantidade</th>
+                <th>Solicitante</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for material in materiais %}
+            <tr>
+                <td>{{ material.data.split(' ')[0] }}</td>
+                <td>{{ material.item_nome }}</td>
+                <td>{{ material.quantidade }}</td>
+                <td>{{ material.usuario_nome }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center;">Nenhum material foi enviado para esta obra ainda.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

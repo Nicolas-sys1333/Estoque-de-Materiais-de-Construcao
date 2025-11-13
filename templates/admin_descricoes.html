@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Descrições{% endblock %}
+
+{% block content %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- Formulário de Criação -->
+            <div class="col-md-4">
+                <h3><i class="fas fa-plus-circle"></i> Nova Descrição</h3>
+                <div class="card">
+                    <div class="card-body">
+                        <form action="{{ url_for('gerenciar_descricoes') }}" method="post">
+                            <div class="form-group">
+                                <label for="nome">Nome da Descrição</label>
+                                <input type="text" name="nome" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Adicionar à Lista</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Descrições -->
+            <div class="col-md-8">
+                <h3><i class="fas fa-list-alt"></i> Lista de Descrições</h3>
+                <table class="table table-striped table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Nome</th>
+                            <th class="text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in descricoes %}
+                        <tr>
+                            <td>{{ d.nome }}</td>
+                            <td class="text-right">
+                                <a href="{{ url_for('excluir_descricao', id=d.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta descrição? Ela não poderá ser removida se estiver em uso.');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center">Nenhuma descrição cadastrada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+{% endblock %}

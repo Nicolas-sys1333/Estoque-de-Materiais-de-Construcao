@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Aprovar Pedidos{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Pedidos Pendentes de Aprovação</h1>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Solicitante</th>
+                        <th>Tipo</th>
+                        <th>Item</th>
+                        <th>Qtd.</th>
+                        <th>Obra/Justificativa</th>
+                        <th class="text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos %}
+                    <tr>
+                        <td>{{ pedido.data_solicitacao.split(' ')[0] }}</td>
+                        <td>{{ pedido.solicitante_nome }}</td>
+                        <td>
+                            {% if pedido.tipo == 'compra' %}
+                                <span class="badge badge-info">Compra</span>
+                            {% else %}
+                                <span class="badge badge-warning">Saída</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pedido.item_nome }}</td>
+                        <td>{{ pedido.quantidade }}</td>
+                        <td>
+                            {% if pedido.obra_nome %}
+                                <strong>Obra:</strong> {{ pedido.obra_nome }} <br>
+                            {% endif %}
+                            <small class="text-muted">{{ pedido.justificativa }}</small>
+                        </td>
+                        <td class="text-right">
+                            <a href="{{ url_for('aprovar_pedido', id=pedido.id) }}" class="btn btn-success btn-sm" onclick="return confirm('Tem certeza que deseja APROVAR este pedido? A ação é irreversível e irá alterar o estoque.');">
+                                <i class="fas fa-check"></i> Aprovar
+                            </a>
+                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#modalRejeitar" data-id="{{ pedido.id }}">
+                                <i class="fas fa-times"></i> Rejeitar 
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Nenhum pedido pendente.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<!-- Modal Rejeitar Pedido -->
+<div class="modal fade" id="modalRejeitar" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Rejeitar Pedido</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form action="{{ url_for('rejeitar_pedido') }}" method="post">
+          <div class="modal-body">
+                <input type="hidden" name="pedido_id" id="pedido_id_rejeitar">
+                <div class="form-group">
+                    <label for="motivo_rejeicao">Motivo da Rejeição</label>
+                    <textarea name="motivo_rejeicao" class="form-control" rows="3" required></textarea>
+                </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-danger">Confirmar Rejeição</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    // Script para passar o ID do pedido para o modal de rejeição
+    $('#modalRejeitar').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var pedidoId = button.data('id');
+        var modal = $(this);
+        modal.find('.modal-body #pedido_id_rejeitar').val(pedidoId);
+    });
+</script>
+{% endblock %}

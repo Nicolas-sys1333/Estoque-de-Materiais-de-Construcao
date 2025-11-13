@@ -1,0 +1,27 @@
+O projeto precisa das seguintes bibliotecas para rodar 
+
+ Flask
+ pandas
+ openpyxl
+ pdfkit (necessário baixar o arquivo no link https://wkhtmltopdf.org/downloads.html e executar)
+
+Comando de instalação para as bibliotecas
+
+pip install Flask
+pip install pandas
+pip install openpyxl
+pip install pdfkit
+
+Para rodar a aplicação é necessário entrar na pasta que está o projeto pelo terminal e digitar o comando 
+python app.py
+
+
+Acessos a perfis de diferente 
+
+Administrador
+Login: Admin
+Senha: Admin
+
+Adrielli
+Login: Adri
+Senha: 12345
