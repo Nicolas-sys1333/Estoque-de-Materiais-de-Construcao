@@ -23,7 +23,11 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <p class="text-muted small">A senha do usuário não pode ser alterada nesta tela.</p>
+                        <div class="form-group">
+                            <label for="password">Nova Senha</label>
+                            <input type="password" name="password" class="form-control" placeholder="Deixe em branco para não alterar">
+                            <small class="form-text text-muted">Preencha este campo apenas se desejar redefinir a senha do usuário.</small>
+                        </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('gerenciar_usuarios') }}" class="btn btn-secondary">Cancelar</a>

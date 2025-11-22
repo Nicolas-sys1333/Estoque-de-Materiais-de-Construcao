@@ -172,6 +172,8 @@ def aprovar_pedido(pedido_id: int, aprovador_id: int):
         conn.commit()
         registrar_log(aprovador_id, "APROVAR_PEDIDO", f"Pedido ID: {pedido_id}")
     
+    # Substitui a mensagem de movimentação por uma mensagem de aprovação mais clara.
+    msg = f"Pedido #{pedido_id} aprovado com sucesso e estoque atualizado."
     conn.close()
     return sucesso, msg
 

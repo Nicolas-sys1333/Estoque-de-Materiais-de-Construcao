@@ -1,18 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Sistema de Estoque{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
         {% if pedidos_pendentes_count > 0 %}
-        <div class="alert alert-warning" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
           <h4 class="alert-heading"><i class="fas fa-inbox"></i> Novos Pedidos para Aprovação!</h4>
           <p>Existem <strong>{{ pedidos_pendentes_count }}</strong> pedido(s) aguardando sua aprovação.</p>
           <hr>
@@ -23,7 +18,10 @@
         {% endif %}
 
         {% if itens_baixo_estoque %}
-        <div class="alert alert-danger" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
           <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Alerta de Estoque Baixo!</h4>
           <p>Os seguintes itens atingiram o nível mínimo de estoque (50 unidades ou menos):</p>
           <hr>
@@ -96,19 +94,35 @@
                     </div>
                 </a>
             </div>
+
+            {# Cards exclusivos do Administrador #}
             {% if usuario.role == 'administracao' %}
             <div class="col-md-4 mb-4">
-                <a href="{{ url_for('registrar_movimentacao') }}" class="card-link">
+                <a href="{{ url_for('gerenciar_obras') }}" class="card-link">
                     <div class="card text-center h-100">
                         <div class="card-body">
-                            <i class="fas fa-exchange-alt fa-3x mb-3 text-success"></i>
-                            <h5 class="card-title">Entrada Direta</h5>
-                            <p class="card-text text-muted">Registre entradas de materiais que não necessitam de pedido.</p>
+                            <i class="fas fa-hard-hat fa-3x mb-3 text-warning"></i>
+                            <h5 class="card-title">Gerenciar Obras</h5>
+                            <p class="card-text text-muted">Adicione ou edite as obras cadastradas.</p>
                         </div>
                     </div>
                 </a>
             </div>
-            {% else %}
+            <div class="col-md-4 mb-4">
+                <a href="{{ url_for('registrar_movimentacao') }}" class="card-link">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="fas fa-dolly-flatbed fa-3x mb-3 text-success"></i>
+                            <h5 class="card-title">Entrada Direta</h5>
+                            <p class="card-text text-muted">Registre entradas de materiais no estoque.</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endif %}
+
+            {# O card de Obras só aparece para quem não é admin #}
+            {% if usuario.role != 'administracao' %}
             <div class="col-md-4 mb-4">
                 <a href="{{ url_for('listar_obras_public') }}" class="card-link">
                     <div class="card text-center h-100">
@@ -119,18 +133,18 @@
                         </div>
                     </div>
                 </a>
-            </div>
+            </div>            
             {% endif %}
-            <div class="col-md-4 mb-4">
-                <a href="{{ url_for('ver_relatorios') }}" class="card-link">
-                    <div class="card text-center h-100">
-                        <div class="card-body">
-                            <i class="fas fa-chart-line fa-3x mb-3 text-info"></i>
-                            <h5 class="card-title">Ver Relatórios</h5>
-                            <p class="card-text text-muted">Acesse indicadores de consumo e saldo.</p>
+                <div class="col-md-4 mb-4">
+                    <a href="{{ url_for('ver_relatorios') }}" class="card-link">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="fas fa-chart-line fa-3x mb-3 text-info"></i>
+                                <h5 class="card-title">Ver Relatórios</h5>
+                                <p class="card-text text-muted">Acesse indicadores de consumo e saldo.</p>
+                            </div>
                         </div>
-                    </div>
-                </a>
-            </div>
+                    </a>
+                </div>
         </div>
 {% endblock %}

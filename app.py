@@ -50,7 +50,7 @@ def login():
 @app.route('/logout')
 def logout():
     usuario_nome = session.get('usuario', {}).get('username', 'Desconhecido')
-    session.pop('usuario', None)
+    session.clear() # Limpa toda a sessão, incluindo flash messages pendentes
     flash(f"Usuário {usuario_nome} deslogado com sucesso.", "info")
     return redirect(url_for('login'))
 
@@ -65,7 +65,7 @@ def dashboard():
     itens_baixo_estoque = []
     if session['usuario']['role'] == 'administracao':
         itens_baixo_estoque = estoque.listar_itens_estoque_baixo()
-        
+    
     return render_template(
         'dashboard.html', 
         usuario=session['usuario'], 
@@ -116,7 +116,10 @@ def pedir_compra_item():
 
     sucesso, msg = pedidos.criar_pedido_compra(item_id, quantidade, justificativa, usuario['id'])
     
-    flash(msg, "success" if sucesso else "danger")
+    if sucesso:
+        flash("Pedido de compra enviado com sucesso! Aguardando aprovação do administrador.", "success")
+    else:
+        flash(msg, "danger") # Mostra a mensagem de erro específica, se houver falha.
     return redirect(url_for('ver_estoque'))
 
 @app.route('/estoque/editar/<int:id>', methods=['GET', 'POST'])
@@ -241,7 +244,7 @@ def exportar_relatorio_pdf():
         
         # Gera o PDF a partir do HTML
         pdf = pdfkit.from_string(html_para_pdf, False, configuration=config)
-        return Response(pdf, mimetype="application/pdf", headers={"Content-Disposition": "attachment;filename=relatorio_estoque.pdf"})
+        return Response(pdf, mimetype="application/pdf", headers={"Content-Disposition": "inline;filename=relatorio_estoque.pdf"})
     except FileNotFoundError:
         flash("ERRO: O programa 'wkhtmltopdf' não foi encontrado no caminho padrão. Verifique a instalação.", "danger")
         return redirect(url_for('ver_relatorios'))
@@ -269,7 +272,7 @@ def exportar_relatorio_obra_pdf(id):
         config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
         pdf = pdfkit.from_string(html_para_pdf, False, configuration=config)
         filename = f"relatorio_obra_{obra['nome'].replace(' ', '_')}.pdf"
-        return Response(pdf, mimetype="application/pdf", headers={"Content-Disposition": f"attachment;filename={filename}"})
+        return Response(pdf, mimetype="application/pdf", headers={"Content-Disposition": f"inline;filename={filename}"})
     except FileNotFoundError:
         flash("ERRO: O programa 'wkhtmltopdf' não foi encontrado no caminho padrão. Verifique a instalação.", "danger")
         return redirect(url_for('detalhes_obra', id=id))
@@ -308,7 +311,9 @@ def editar_usuario(id):
     if request.method == 'POST':
         username = request.form['username']
         role = request.form['role']
-        sucesso, msg = auth.atualizar_usuario(id, username, role, usuario_sessao['id'])
+        # Pega a nova senha. Se estiver vazia, será None.
+        nova_senha = request.form.get('password') or None
+        sucesso, msg = auth.atualizar_usuario(id, username, role, usuario_sessao['id'], nova_senha)
         flash(msg, "success" if sucesso else "danger")
         return redirect(url_for('gerenciar_usuarios'))
 
@@ -386,7 +391,7 @@ def aprovar_pedido(id):
         return redirect(url_for('dashboard'))
     
     sucesso, msg = pedidos.aprovar_pedido(id, usuario['id'])
-    flash(msg, "success" if sucesso else "danger")
+    # flash(msg, "success" if sucesso else "danger") # Removido para não poluir a tela
     return redirect(url_for('gerenciar_pedidos'))
 
 @app.route('/admin/pedidos/rejeitar', methods=['POST'])
@@ -425,8 +430,14 @@ def detalhes_obra(id):
 
     obra = pedidos.get_obra(id)
     materiais_enviados = pedidos.get_materiais_por_obra(id)
+    
+    # Calcula os totais para os cards
+    total_quantidade_enviada = sum(m['quantidade'] for m in materiais_enviados)
+    total_solicitacoes = len(materiais_enviados)
+
     itens_estoque = estoque.listar_itens()
-    return render_template('obra_detalhes.html', usuario=usuario, obra=obra, materiais=materiais_enviados, itens_estoque=itens_estoque)
+    return render_template('obra_detalhes.html', usuario=usuario, obra=obra, materiais=materiais_enviados, itens_estoque=itens_estoque,
+                           total_quantidade_enviada=total_quantidade_enviada, total_solicitacoes=total_solicitacoes)
 
 @app.route('/admin/descricoes', methods=['GET', 'POST'])
 def gerenciar_descricoes():
