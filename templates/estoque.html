@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Saldo de Estoque{% endblock %}
+{% block title %}Estoque{% endblock %}
 
 {% block content %}
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1>Saldo de Estoque</h1>
             <div>
                 <input type="text" id="filtroTabela" class="form-control d-inline-block w-auto" placeholder="Filtrar itens...">
-                {% if auth.tem_permissao(usuario.role, 'cadastrar_item') %}
+                {% if usuario.role == 'administracao' %}
                 <button type="button" class="btn btn-primary ml-2" data-toggle="modal" data-target="#modalAdicionarItem">
                     <i class="fas fa-plus-circle mr-1"></i> Adicionar Novo Produto
                 </button>
@@ -26,7 +26,7 @@
             <div class="alert alert-warning">Nenhum item encontrado no estoque.</div>
         {% else %}
             <table class="table table-striped table-hover">
-                <thead class="thead-dark">
+                <thead>
                     <tr>
                         <th>Nome</th>
                         <th>Descrição</th>
@@ -141,22 +141,24 @@
     </div>
   </div>
 </div>
+{% endblock %}
 
-    <script>
-        // Script simples para filtrar a tabela em tempo real
-        document.getElementById('filtroTabela').addEventListener('keyup', function() {
-            let filtro = this.value.toLowerCase();
-            let tabela = document.getElementById('corpoTabela');
-            let linhas = tabela.getElementsByTagName('tr');
+{% block scripts %}
+<script>
+    // Script simples para filtrar a tabela em tempo real
+    document.getElementById('filtroTabela').addEventListener('keyup', function() {
+        let filtro = this.value.toLowerCase();
+        let tabela = document.getElementById('corpoTabela');
+        let linhas = tabela.getElementsByTagName('tr');
 
-            for (let i = 0; i < linhas.length; i++) {
-                let textoLinha = linhas[i].textContent || linhas[i].innerText;
-                if (textoLinha.toLowerCase().indexOf(filtro) > -1) {
-                    linhas[i].style.display = "";
-                } else {
-                    linhas[i].style.display = "none";
-                }
+        for (let i = 0; i < linhas.length; i++) {
+            let textoLinha = linhas[i].textContent || linhas[i].innerText;
+            if (textoLinha.toLowerCase().indexOf(filtro) > -1) {
+                linhas[i].style.display = "";
+            } else {
+                linhas[i].style.display = "none";
             }
-        });
-    </script>
+        }
+    });
+</script>
 {% endblock %}

@@ -92,17 +92,30 @@ def get_usuario(user_id: int):
     conn.close()
     return dict(usuario) if usuario else None
 
-def atualizar_usuario(user_id: int, username: str, role: str, ator_id: int):
-    """Atualiza o username e o perfil de um usuário."""
+def atualizar_usuario(user_id: int, username: str, role: str, ator_id: int, nova_senha=None):
+    """Atualiza os dados de um usuário, incluindo a senha opcionalmente."""
     if role not in PERMISSOES:
         return False, f"Erro: Perfil '{role}' é inválido."
     conn = conectar_bd()
     if not conn: return False, "Falha na conexão com o banco de dados."
     try:
         cursor = conn.cursor()
-        cursor.execute("UPDATE usuarios SET username = ?, role = ? WHERE id = ?", (username, role, user_id))
+        
+        if nova_senha:
+            # Se uma nova senha foi fornecida, atualiza tudo, incluindo o hash da senha
+            password_hash = hash_password(nova_senha)
+            cursor.execute(
+                "UPDATE usuarios SET username = ?, role = ?, password_hash = ? WHERE id = ?",
+                (username, role, password_hash, user_id)
+            )
+            log_details = f"ID do Usuário: {user_id}, Novo Username: {username}, Novo Perfil: {role}, Senha alterada."
+        else:
+            # Se a senha não foi fornecida, atualiza apenas username e role
+            cursor.execute("UPDATE usuarios SET username = ?, role = ? WHERE id = ?", (username, role, user_id))
+            log_details = f"ID do Usuário: {user_id}, Novo Username: {username}, Novo Perfil: {role}"
+
         conn.commit()
-        registrar_log(ator_id, "ATUALIZAR_USUARIO", f"ID do Usuário: {user_id}, Novo Username: {username}, Novo Perfil: {role}")
+        registrar_log(ator_id, "ATUALIZAR_USUARIO", log_details)
         return True, "Usuário atualizado com sucesso."
     except sqlite3.IntegrityError:
         return False, f"O nome de usuário '{username}' já está em uso."
