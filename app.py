@@ -401,9 +401,14 @@ def rejeitar_pedido():
         flash("Acesso negado.", "danger")
         return redirect(url_for('dashboard'))
     
-    pedido_id = request.form['pedido_id']
-    motivo = request.form['motivo_rejeicao']
-    sucesso, msg = pedidos.rejeitar_pedido(int(pedido_id), usuario['id'], motivo)
+    try:
+        pedido_id = int(request.form['pedido_id'])
+        motivo = request.form['motivo_rejeicao']
+        sucesso, msg = pedidos.rejeitar_pedido(pedido_id, usuario['id'], motivo)
+    except (ValueError, KeyError):
+        sucesso = False
+        msg = "Erro ao processar a rejeição. ID do pedido inválido ou ausente."
+
     flash(msg, "success" if sucesso else "danger")
     return redirect(url_for('gerenciar_pedidos'))
 

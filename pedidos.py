@@ -1,5 +1,6 @@
 # pedidos.py
 import sqlite3
+from datetime import datetime
 from database import conectar_bd
 from logs import registrar_log
 import estoque
@@ -135,7 +136,14 @@ def listar_pedidos_pendentes():
     """)
     pedidos = cursor.fetchall()
     conn.close()
-    return [dict(p) for p in pedidos]
+    
+    # Converte a string de data para um objeto datetime
+    pedidos_formatados = []
+    for p in pedidos:
+        pedido_dict = dict(p)
+        pedido_dict['data_solicitacao'] = datetime.strptime(pedido_dict['data_solicitacao'], '%Y-%m-%d %H:%M:%S')
+        pedidos_formatados.append(pedido_dict)
+    return pedidos_formatados
 
 def aprovar_pedido(pedido_id: int, aprovador_id: int):
     conn = conectar_bd()
@@ -181,18 +189,22 @@ def rejeitar_pedido(pedido_id: int, aprovador_id: int, motivo: str):
     """Altera o status de um pedido para 'rejeitado'."""
     conn = conectar_bd()
     if not conn: return False, "Falha na conexão com o banco de dados."
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM pedidos WHERE id = ? AND status = 'pendente'", (pedido_id,))
-    pedido = cursor.fetchone()
-    if not pedido:
-        conn.close()
-        return False, "Pedido não encontrado ou já processado."
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM pedidos WHERE id = ? AND status = 'pendente'", (pedido_id,))
+        pedido = cursor.fetchone()
+        if not pedido:
+            return False, f"Pedido #{pedido_id} não encontrado, já foi processado ou não está mais pendente."
+    except Exception as e:
+        return False, f"Erro ao buscar pedido para rejeição: {e}"
 
     cursor.execute("UPDATE pedidos SET status = 'rejeitado', aprovador_id = ?, data_decisao = CURRENT_TIMESTAMP, motivo_rejeicao = ? WHERE id = ?", (aprovador_id, motivo, pedido_id))
     conn.commit()
     registrar_log(aprovador_id, "REJEITAR_PEDIDO", f"Pedido ID: {pedido_id}, Motivo: {motivo}")
     conn.close()
     return True, "Pedido rejeitado com sucesso."
+
+
 
 def get_pedidos_por_solicitante(solicitante_id: int):
     """Busca todos os pedidos feitos por um usuário específico."""
