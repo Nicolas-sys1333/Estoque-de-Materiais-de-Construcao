@@ -91,8 +91,7 @@
                 <thead>
                     <tr>
                         <th>Data do Pedido</th>
-                        <th>Item</th>
-                        <th>Quantidade</th>
+                        <th>Itens</th>
                         <th>Status</th>
                         <th>Observação/Motivo</th>
                     </tr>
@@ -100,9 +99,14 @@
                 <tbody>
                     {% for pedido in pedidos_usuario %}
                     <tr>
-                        <td>{{ pedido.data_solicitacao.split(' ')[0] }}</td>
-                        <td>{{ pedido.item_nome }}</td>
-                        <td>{{ pedido.quantidade }}</td>
+                        <td>{{ pedido.data_solicitacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            <ul class="list-unstyled mb-0 small">
+                                {% for item in pedido.itens %}
+                                    <li>- {{ item.item_nome }} (Qtd: {{ item.quantidade }})</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
                         <td>
                             {% if pedido.status == 'aprovado' %}
                                 <span class="badge badge-success">Aprovado</span>
@@ -182,7 +186,7 @@
                 <tbody id="corpoTabela">
                     {% for mov in movimentacoes %}
                     <tr data-tipo="{{ mov.tipo }}">
-                        <td>{{ mov.data.split('.')[0] }}</td>
+                        <td>{{ mov.data.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>{{ mov.item_nome }}</td>
                         <td>
                             {% if mov.tipo == 'entrada' %}

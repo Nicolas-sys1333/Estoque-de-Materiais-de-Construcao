@@ -3,102 +3,208 @@
 {% block title %}Detalhes da Obra: {{ obra.nome }}{% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center">
+<div class="container-fluid">
+    <!-- Cabeçalho da Página -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Detalhes da Obra: <strong>{{ obra.nome }}</strong></h1>
         <div>
-            <h1 class="mb-0">{{ obra.nome }}</h1>
-            <p class="lead text-muted">{{ obra.localizacao }}</p>
-        </div>
-        <a href="{{ url_for('exportar_relatorio_obra_pdf', id=obra.id) }}" class="btn btn-outline-danger" target="_blank"><i class="fas fa-file-pdf mr-2"></i>Exportar Relatório</a>
-    </div>
-    <hr>
-
-    <!-- Cards de Indicadores da Obra -->
-    <div class="row mb-4">
-        <div class="col-md-6 mb-4">
-            <div class="card card-indicator info h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <i class="fas fa-dolly fa-3x"></i>
-                        <div class="text-right">
-                            <div class="h3">{{ total_quantidade_enviada }}</div>
-                            <div class="text-muted">Unidades de Materiais Enviadas</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 mb-4">
-            <div class="card card-indicator primary h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <i class="fas fa-clipboard-list fa-3x"></i>
-                        <div class="text-right">
-                            <div class="h3">{{ total_solicitacoes }}</div>
-                            <div class="text-muted">Total de Solicitações Aprovadas</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#requisitarMaterialModal">
+                <i class="fas fa-plus fa-sm text-white-50"></i> Requisitar Material
+            </button>
+            <a href="{{ url_for('exportar_relatorio_obra_pdf', id=obra.id) }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-download fa-sm text-white-50"></i> Gerar Relatório PDF
+            </a>
         </div>
     </div>
 
+    <!-- Cards de Resumo -->
     <div class="row">
-        <!-- Coluna de Pedido -->
-        <div class="col-md-4">
-            <h3><i class="fas fa-paper-plane"></i> Solicitar Material</h3>
-            <div class="card">
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
-                    <form action="{{ url_for('detalhes_obra', id=obra.id) }}" method="post">
-                        <div class="form-group">
-                            <label for="item_id">Item</label>
-                            <select name="item_id" class="form-control" required>
-                                <option value="" disabled selected>Selecione um item...</option>
-                                {% for item in itens_estoque %}
-                                    <option value="{{ item.id }}">{{ item.nome }} (Disponível: {{ item.quantidade }})</option>
-                                {% endfor %}
-                            </select>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Despachos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_solicitacoes }}</div>
                         </div>
-                        <div class="form-group">
-                            <label for="quantidade">Quantidade</label>
-                            <input type="number" name="quantidade" class="form-control" min="1" required>
+                        <div class="col-auto">
+                            <i class="fas fa-truck fa-2x text-gray-300"></i>
                         </div>
-                        <div class="form-group">
-                            <label for="justificativa">Justificativa</label>
-                            <textarea name="justificativa" class="form-control" rows="2" required></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total de Itens Enviados</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_quantidade_enviada }}</div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block">Enviar Pedido</button>
-                    </form>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações da Obra e Histórico de Despachos -->
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Informações da Obra</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Responsável:</strong> {{ obra.responsavel }}</p>
+                    <p><strong>Endereço:</strong> {{ obra.endereco }}, {{ obra.bairro }} - {{ obra.cidade }}</p>
+                    <p><strong>CEP:</strong> {{ obra.cep }}</p>
+                    <p><strong>Status:</strong> <span class="badge badge-info">{{ obra.status }}</span></p>
+                    {% if obra.previsao_conclusao %}
+                    <p><strong>Previsão de Conclusão:</strong> {{ obra.previsao_conclusao.strftime('%d/%m/%Y') }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Coluna de Histórico -->
-        <div class="col-md-8">
-            <h3><i class="fas fa-history"></i> Materiais Enviados para a Obra</h3>
-            <table class="table table-sm table-striped">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Item</th>
-                        <th>Quantidade</th>
-                        <th>Liberado por</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for material in materiais %}
-                    <tr>
-                        <td>{{ material.data.split(' ')[0] }}</td>
-                        <td>{{ material.item_nome }}</td>
-                        <td>{{ material.quantidade }}</td>
-                        <td>{{ material.usuario_nome }}</td>
-                    </tr>
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Histórico de Despachos</h6>
+                </div>
+                <div class="card-body">
+                    {% for despacho in despachos %}
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>
+                                <strong><a href="{{ url_for('detalhes_despacho', id=despacho.id) }}">Despacho #{{ despacho.id }}</a></strong> - Status:
+                                {% if despacho.status_entrega == 'Entregue' %}
+                                    <span class="badge badge-success">{{ despacho.status_entrega }}</span>
+                                {% elif despacho.status_entrega == 'Em Rota' %}
+                                    <span class="badge badge-warning">{{ despacho.status_entrega }}</span>
+                                {% elif despacho.status_entrega == 'Problema' %}
+                                    <span class="badge badge-danger">{{ despacho.status_entrega }}</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">{{ despacho.status_entrega }}</span>
+                                {% endif %}
+                            </span>
+                            <small class="text-muted">Data: {{ despacho.data_despacho.strftime('%d/%m/%Y %H:%M') }}</small>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th class="text-right">Quantidade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in despacho.itens %}
+                                    <tr>
+                                        <td>{{ item.item_nome }}</td>
+                                        <td class="text-right">{{ item.quantidade }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">Nenhum material foi enviado para esta obra ainda.</td>
-                    </tr>
+                        <div class="alert alert-secondary">Nenhum despacho encontrado para esta obra.</div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+            </div>
         </div>
     </div>
+</div>
+
+<!-- Modal para Requisitar Material -->
+<div class="modal fade" id="requisitarMaterialModal" tabindex="-1" role="dialog" aria-labelledby="requisitarMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('detalhes_obra', id=obra.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="requisitarMaterialModalLabel">Requisitar Materiais para a Obra</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Container for dynamic item rows -->
+                    <div id="itens-requisicao-container">
+                        <!-- Template for a single item row (hidden) -->
+                        <div class="row align-items-center item-row mb-2" style="display: none;" id="requisicao-item-template">
+                            <div class="col-md-7">
+                                <select class="form-control item-select" name="item_id[]" disabled>
+                                    <option value="">Selecione um item...</option>
+                                    {% for item in itens_estoque %}
+                                    <option value="{{ item.id }}">{{ item.nome }} (Disponível: {{ item.quantidade }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control" name="quantidade[]" placeholder="Qtd" min="1" disabled>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-sm remove-item-btn">Remover</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Button to add new item rows -->
+                    <button type="button" class="btn btn-success btn-sm mt-2" id="add-requisicao-item-btn">
+                        <i class="fas fa-plus"></i> Adicionar Item
+                    </button>
+                    <hr>
+                    <!-- Justification for the whole request -->
+                    <div class="form-group">
+                        <label for="justificativa">Justificativa (para todos os itens)</label>
+                        <textarea class="form-control" id="justificativa" name="justificativa" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Enviar Pedidos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addItemBtn = document.getElementById('add-requisicao-item-btn');
+    const itemsContainer = document.getElementById('itens-requisicao-container');
+    const itemTemplate = document.getElementById('requisicao-item-template');
+
+    function addRow() {
+        const newRow = itemTemplate.cloneNode(true);
+        newRow.style.display = 'flex';
+        newRow.removeAttribute('id');
+        newRow.querySelector('select').disabled = false;
+        newRow.querySelector('input').disabled = false;
+        newRow.querySelector('select').required = true;
+        newRow.querySelector('input').required = true;
+        itemsContainer.appendChild(newRow);
+    }
+
+    addItemBtn.addEventListener('click', addRow);
+
+    itemsContainer.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-item-btn')) {
+            e.target.closest('.item-row').remove();
+        }
+    });
+
+    // Add the first row automatically when the modal is shown and clear old ones
+    $('#requisitarMaterialModal').on('shown.bs.modal', function () {
+        $(itemsContainer).find('.item-row:not(#requisicao-item-template)').remove();
+        addRow();
+    });
+});
+</script>
 {% endblock %}

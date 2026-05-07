@@ -34,12 +34,17 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('ver_relatorios') }}">Relatórios</a>
                     </li>
+                    {% if auth.tem_permissao(usuario.role, 'registrar_saida') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('gerenciar_logistica') }}"> Logística</a>
+                    </li>
+                    {% endif %}
 
                     {% if usuario.role == 'administracao' %}
                     <!-- Menu Cadastros (Admin) -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="cadastrosDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Cadastros
+                            Gerenciar
                         </a>
                         <div class="dropdown-menu" aria-labelledby="cadastrosDropdown">
                             <a class="dropdown-item" href="{{ url_for('listar_obras_public') }}">Visualizar Obras</a>

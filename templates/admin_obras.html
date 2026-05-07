@@ -14,16 +14,56 @@
         <div class="card-body">
             <form action="{{ url_for('gerenciar_obras') }}" method="POST">
                 <div class="form-row">
-                    <div class="form-group col-md-5">
+                    <div class="form-group col-md-6">
                         <label for="nome">Nome da Obra</label>
                         <input type="text" class="form-control" id="nome" name="nome" required>
                     </div>
-                    <div class="form-group col-md-5">
-                        <label for="localizacao">Localização</label>
-                        <input type="text" class="form-control" id="localizacao" name="localizacao" required>
+                    <div class="form-group col-md-6">
+                        <label for="cep">CEP</label>
+                        <input type="text" class="form-control" id="cep" name="cep" required>
                     </div>
-                    <div class="form-group col-md-2 align-self-end">
-                        <button type="submit" class="btn btn-primary w-100">Salvar</button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="endereco">Endereço</label>
+                        <input type="text" class="form-control" id="endereco" name="endereco">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="bairro">Bairro</label>
+                        <input type="text" class="form-control" id="bairro" name="bairro">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="cidade">Cidade</label>
+                        <input type="text" class="form-control" id="cidade" name="cidade">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-10">
+                        <label for="responsavel">Responsável pela Obra</label>
+                        <select class="form-control" id="responsavel" name="responsavel" required>
+                            <option value="" disabled selected>Selecione um responsável...</option>
+                            {% for user in usuarios_sistema %}
+                                <option value="{{ user.username }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="status">Status</label>
+                        <select class="form-control" id="status" name="status" required>
+                            <option value="Planejamento" selected>Planejamento</option>
+                            <option value="Execução">Execução</option>
+                            <option value="Finalizada">Finalizada</option>
+                            <option value="Pausada">Pausada</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="previsao_conclusao">Previsão de Conclusão</label>
+                        <input type="date" class="form-control" id="previsao_conclusao" name="previsao_conclusao">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12 text-right">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
                     </div>
                 </div>
             </form>
@@ -37,7 +77,9 @@
             <tr>
                 <th>ID</th>
                 <th>Nome</th>
-                <th>Localização</th>
+                <th>CEP</th>
+                <th>Responsável</th>
+                <th>Status</th>
                 <th class="text-center">Ações</th>
             </tr>
         </thead>
@@ -46,7 +88,9 @@
             <tr>
                 <td data-label="ID">{{ obra.id }}</td>
                 <td data-label="Nome">{{ obra.nome }}</td>
-                <td data-label="Localização">{{ obra.localizacao }}</td>
+                <td data-label="CEP">{{ obra.cep }}</td>
+                <td data-label="Responsável">{{ obra.responsavel }}</td>
+                <td data-label="Status">{{ obra.status }}</td>
                 <td class="actions-cell">
                     <a href="{{ url_for('editar_obra', id=obra.id) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Editar</a>
                 </td>
@@ -55,4 +99,48 @@
         </tbody>
     </table>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function buscarCep(cepInputId, enderecoInputId, bairroInputId, cidadeInputId) {
+            const cepInput = document.getElementById(cepInputId);
+            const enderecoInput = document.getElementById(enderecoInputId);
+            const bairroInput = document.getElementById(bairroInputId);
+            const cidadeInput = document.getElementById(cidadeInputId);
+
+            cepInput.addEventListener('blur', function() {
+                let cep = cepInput.value.replace(/\D/g, ''); // Remove caracteres não numéricos
+
+                if (cep.length === 8) {
+                    enderecoInput.value = 'Buscando...';
+                    bairroInput.value = 'Buscando...';
+                    cidadeInput.value = 'Buscando...';
+
+                    fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.erro) {
+                                enderecoInput.value = data.logradouro || '';
+                                bairroInput.value = data.bairro || '';
+                                cidadeInput.value = data.localidade || '';
+                            } else {
+                                alert('CEP não encontrado.');
+                                enderecoInput.value = '';
+                                bairroInput.value = '';
+                                cidadeInput.value = '';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao buscar CEP:', error);
+                            alert('Erro ao buscar CEP. Tente novamente.');
+                            enderecoInput.value = '';
+                            bairroInput.value = '';
+                            cidadeInput.value = '';
+                        });
+                }
+            });
+        }
+        buscarCep('cep', 'endereco', 'bairro', 'cidade'); // Para o formulário de cadastro
+    });
+</script>
 {% endblock %}

@@ -15,9 +15,8 @@
                     <th>Data</th>
                     <th>Solicitante</th>
                     <th>Tipo</th>
-                    <th>Item</th>
-                    <th>Qtd.</th>
                     <th>Obra</th>
+                    <th>Itens Solicitados</th>
                     <th>Justificativa</th>
                     <th class="text-center">Ações</th>
                 </tr>
@@ -29,9 +28,14 @@
                     <td data-label="Data">{{ pedido.data_solicitacao.strftime('%d/%m/%Y %H:%M') }}</td>
                     <td data-label="Solicitante">{{ pedido.solicitante_nome }}</td>
                     <td data-label="Tipo"><span class="badge badge-info">{{ pedido.tipo.capitalize() }}</span></td>
-                    <td data-label="Item">{{ pedido.item_nome }}</td>
-                    <td data-label="Qtd.">{{ pedido.quantidade }}</td>
                     <td data-label="Obra">{{ pedido.obra_nome or 'N/A' }}</td>
+                    <td data-label="Itens">
+                        <ul class="list-unstyled mb-0 small">
+                            {% for item in pedido.itens %}
+                                <li>- {{ item.item_nome }} (Qtd: {{ item.quantidade }})</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
                     <td data-label="Justificativa">{{ pedido.justificativa }}</td>
                     <td class="actions-cell">
                         <a href="{{ url_for('aprovar_pedido', id=pedido.id) }}" class="btn btn-success btn-sm mb-1" onclick="return confirm('Tem certeza que deseja aprovar este pedido?');">

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciamento de Logística{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho da Página -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Gerenciamento de Logística</h1>
+    </div>
+
+    <!-- Tabela de Histórico de Despachos -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Histórico de Despachos Criados</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>Data</th>
+                            <th>Obra</th>
+                            <th>Entregador</th>
+                            <th>Status</th>
+                            <th>Data Entrega</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for despacho in despachos_registrados %}
+                        <tr>
+                            <td>{{ despacho.id }}</td>
+                            {# CORREÇÃO: Usando strftime para formatar o objeto datetime #}
+                            <td>{{ despacho.data_despacho.strftime('%d/%m/%Y %H:%M') if despacho.data_despacho else '' }}</td>
+                            <td>{{ despacho.obra_nome }}</td>
+                            <td>{{ despacho.nome_entregador }}</td>
+                            <td>
+                                {% if despacho.status_entrega == 'Entregue' %}
+                                    <span class="badge badge-success">{{ despacho.status_entrega }}</span>
+                                {% elif despacho.status_entrega == 'Em Rota' %}
+                                    <span class="badge badge-warning">{{ despacho.status_entrega }}</span>
+                                {% elif despacho.status_entrega == 'Problema' %}
+                                    <span class="badge badge-danger">{{ despacho.status_entrega }}</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">{{ despacho.status_entrega }}</span>
+                                {% endif %}
+                            </td>
+                            {# CORREÇÃO: Usando strftime para formatar o objeto datetime #}
+                            <td>{{ despacho.data_entrega.strftime('%d/%m/%Y %H:%M') if despacho.data_entrega else 'N/A' }}</td>
+                            <td>
+                                <a href="{{ url_for('detalhes_despacho', id=despacho.id) }}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-info-circle"></i> Detalhes
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">Nenhum despacho registrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

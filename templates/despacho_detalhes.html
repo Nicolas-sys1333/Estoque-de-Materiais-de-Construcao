@@ -1,0 +1,172 @@
+
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Despacho #{{ despacho.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho da Página -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Detalhes do Despacho #{{ despacho.id }}</h1>
+        <a href="{{ url_for('gerenciar_logistica') }}" class="btn btn-sm btn-secondary">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Voltar para Logística
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Coluna de Informações do Despacho -->
+        <div class="col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Informações Gerais</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Obra de Destino:</strong> <a href="{{ url_for('detalhes_obra', id=despacho.obra_id) }}">{{ despacho.obra_nome }}</a></p>
+                    <p><strong>Endereço:</strong> {{ despacho.endereco }}, {{ despacho.bairro }} - {{ despacho.cidade }} (CEP: {{ despacho.cep }})</p>
+                    <hr>
+                    <p><strong>Data do Despacho:</strong> {{ despacho.data_despacho.strftime('%d/%m/%Y %H:%M') if despacho.data_despacho else 'N/A' }}</p>
+                    <p><strong>Entregador:</strong> {{ despacho.nome_entregador }}</p>
+                    <p><strong>Telefone:</strong> {{ despacho.telefone_entregador }}</p>
+                    <p><strong>Criado por:</strong> {{ despacho.usuario_despacho_nome }}</p>
+                    {% if despacho.observacoes %}
+                        <p><strong>Observações:</strong> {{ despacho.observacoes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Status da Entrega</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Status Atual:</strong> 
+                        {% if despacho.status_entrega == 'Entregue' %}
+                            <span class="badge badge-success">{{ despacho.status_entrega }}</span>
+                        {% elif despacho.status_entrega == 'Em Rota' %}
+                            <span class="badge badge-warning">{{ despacho.status_entrega }}</span>
+                        {% elif despacho.status_entrega == 'Problema' %}
+                            <span class="badge badge-danger">{{ despacho.status_entrega }}</span>
+                        {% else %}
+                            <span class="badge badge-secondary">{{ despacho.status_entrega }}</span>
+                        {% endif %}
+                    </p>
+                    {% if despacho.status_entrega == 'Entregue' %}
+                        <p><strong>Data da Entrega:</strong> {{ despacho.data_entrega.strftime('%d/%m/%Y %H:%M') if despacho.data_entrega else 'Não registrada' }}</p>
+                        <p><strong>Recebido por:</strong> {{ despacho.nome_recebedor or 'Não informado' }}</p>
+                    {% endif %}
+
+                    <hr>
+                    <h6 class="font-weight-bold">Atualizar Status</h6>
+                    <form method="POST" action="{{ url_for('detalhes_despacho', id=despacho.id) }}">
+                        <div class="form-group">
+                            <label for="nome_entregador">Nome do Entregador</label>
+                            <input type="text" class="form-control" id="nome_entregador" name="nome_entregador" value="{{ despacho.nome_entregador or '' }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="telefone_entregador">Telefone do Entregador</label>
+                            <input type="text" class="form-control" id="telefone_entregador" name="telefone_entregador" value="{{ despacho.telefone_entregador or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="status_entrega">Novo Status</label>
+                            <select class="form-control" id="status_entrega" name="status_entrega">
+                                <option value="Pendente" {% if despacho.status_entrega == 'Pendente' %}selected{% endif %}>Pendente</option>
+                                <option value="Em Rota" {% if despacho.status_entrega == 'Em Rota' %}selected{% endif %}>Em Rota</option>
+                                <option value="Entregue" {% if despacho.status_entrega == 'Entregue' %}selected{% endif %}>Entregue</option>
+                                <option value="Problema" {% if despacho.status_entrega == 'Problema' %}selected{% endif %}>Problema</option>
+                            </select>
+                        </div>
+                        <div id="campos_entrega" style="display: {% if despacho.status_entrega == 'Entregue' %}block{% else %}none{% endif %};">
+                            <div class="form-group">
+                                <label for="data_entrega">Data da Entrega</label>
+                                <input type="date" class="form-control" id="data_entrega" name="data_entrega" value="{{ despacho.data_entrega.strftime('%Y-%m-%d') if despacho.data_entrega else '' }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="nome_recebedor_atualizado">Nome do Recebedor</label>
+                                <input type="text" class="form-control" id="nome_recebedor_atualizado" name="nome_recebedor_atualizado" value="{{ despacho.nome_recebedor or '' }}">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Salvar Alterações</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna de Itens do Despacho -->
+        <div class="col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Itens do Despacho</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-right">Quantidade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in despacho.itens %}
+                                <tr>
+                                    <td>{{ item.item_nome }}</td>
+                                    <td class="text-right">{{ item.quantidade }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="text-center">Nenhum item neste despacho.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('status_entrega');
+    const camposEntrega = document.getElementById('campos_entrega');
+    const dataEntregaInput = document.getElementById('data_entrega');
+    const nomeRecebedorInput = document.getElementById('nome_recebedor_atualizado');
+
+    function toggleCamposEntrega() {
+        if (statusSelect.value === 'Entregue') {
+            camposEntrega.style.display = 'block';
+            dataEntregaInput.required = true;
+            nomeRecebedorInput.required = true;
+            // Se a data não estiver preenchida, preenche com a data de hoje
+            if (!dataEntregaInput.value) {
+                const today = new Date().toISOString().split('T')[0];
+                dataEntregaInput.value = today;
+            }
+        } else {
+            camposEntrega.style.display = 'none';
+            dataEntregaInput.required = false;
+            nomeRecebedorInput.required = false;
+        }
+    }
+
+    statusSelect.addEventListener('change', toggleCamposEntrega);
+
+    // Executa a função uma vez no carregamento da página para garantir o estado inicial correto
+    toggleCamposEntrega();
+});
+</script>
+{% endblock %}
+
+```
+
+### 2. Melhoria Estrutural: Refatorando `database.py`
+
+Substitua todo o conteúdo do seu arquivo `database.py` pelo código abaixo. Ele define o esquema final e correto das tabelas e executa as migrações necessárias de forma segura e organizada, sem os blocos de código confusos.
+
+```diff
+--- a/c:\Users\nicol\OneDrive\Desktop\Estoque-de-Materiais-de-Construcao-main\Estoque-de-Materiais-de-Construcao-main\database.py
++++ b/c:\Users\nicol\OneDrive\Desktop\Estoque-de-Materiais-de-Construcao-main\Estoque-de-Materiais-de-Construcao-main\database.py
+    print(f"Banco de dados '{DB_NAME}' e tabelas foram criados/verificados.")

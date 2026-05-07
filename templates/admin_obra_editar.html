@@ -14,8 +14,48 @@
                             <input type="text" name="nome" class="form-control" value="{{ obra.nome }}" required>
                         </div>
                         <div class="form-group">
-                            <label for="localizacao">Localização</label>
-                            <input type="text" name="localizacao" class="form-control" value="{{ obra.localizacao }}">
+                            <label for="cep">CEP</label>
+                            <input type="text" name="cep" class="form-control" value="{{ obra.cep }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="endereco">Endereço</label>
+                            <input type="text" name="endereco" class="form-control" value="{{ obra.endereco }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="bairro">Bairro</label>
+                            <input type="text" name="bairro" class="form-control" value="{{ obra.bairro }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="cidade">Cidade</label>
+                            <input type="text" name="cidade" class="form-control" value="{{ obra.cidade }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="responsavel">Responsável pela Obra</label>
+                            <select class="form-control" id="responsavel" name="responsavel" required>
+                                <option value="" disabled>Selecione um responsável...</option>
+                                {% for user in usuarios_sistema %}
+                                    <option value="{{ user.username }}" {% if obra.responsavel == user.username %}selected{% endif %}>
+                                        {{ user.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="status">Status</label>
+                            {% set can_edit_status = (usuario.role == 'administracao' or usuario.username == obra.responsavel) %}
+                            <select class="form-control" id="status" name="status" required {% if not can_edit_status %}disabled{% endif %}>
+                                <option value="Planejamento" {% if obra.status == 'Planejamento' %}selected{% endif %}>Planejamento</option>
+                                <option value="Execução" {% if obra.status == 'Execução' %}selected{% endif %}>Execução</option>
+                                <option value="Finalizada" {% if obra.status == 'Finalizada' %}selected{% endif %}>Finalizada</option>
+                                <option value="Pausada" {% if obra.status == 'Pausada' %}selected{% endif %}>Pausada</option>
+                            </select>
+                            {% if not can_edit_status %}
+                                <small class="form-text text-muted">Apenas o administrador ou o responsável pela obra podem alterar o status.</small>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="previsao_conclusao">Previsão de Conclusão</label>
+                            <input type="date" name="previsao_conclusao" class="form-control" value="{{ obra.previsao_conclusao_formatted | default('') }}">
                         </div>
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('gerenciar_obras') }}" class="btn btn-secondary">Cancelar</a>
@@ -26,4 +66,48 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function buscarCep(cepInputId, enderecoInputId, bairroInputId, cidadeInputId) {
+                const cepInput = document.getElementById(cepInputId);
+                const enderecoInput = document.getElementById(enderecoInputId);
+                const bairroInput = document.getElementById(bairroInputId);
+                const cidadeInput = document.getElementById(cidadeInputId);
+                
+                cepInput.addEventListener('blur', function() {
+                    let cep = cepInput.value.replace(/\D/g, ''); // Remove caracteres não numéricos
+
+                    if (cep.length === 8) {
+                        enderecoInput.value = 'Buscando...';
+                        bairroInput.value = 'Buscando...';
+                        cidadeInput.value = 'Buscando...';
+
+                        fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (!data.erro) {
+                                    enderecoInput.value = data.logradouro || '';
+                                    bairroInput.value = data.bairro || '';
+                                    cidadeInput.value = data.localidade || '';
+                                } else {
+                                    alert('CEP não encontrado.');
+                                    enderecoInput.value = '';
+                                    bairroInput.value = '';
+                                    cidadeInput.value = '';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Erro ao buscar CEP:', error);
+                                alert('Erro ao buscar CEP. Tente novamente.');
+                                enderecoInput.value = '';
+                                bairroInput.value = '';
+                                cidadeInput.value = '';
+                            });
+                    }
+                });
+            }
+            buscarCep('cep', 'endereco', 'bairro', 'cidade'); // Para o formulário de edição
+        });
+    </script>
 {% endblock %}

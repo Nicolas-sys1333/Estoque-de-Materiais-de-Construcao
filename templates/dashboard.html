@@ -148,3 +148,14 @@
                 </div>
         </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+    // Script para atualizar o label do input de arquivo com o nome do arquivo selecionado
+    document.querySelector('.custom-file-input').addEventListener('change', function(e) {
+        var fileName = document.getElementById("planilha").files[0].name;
+        var nextSibling = e.target.nextElementSibling
+        nextSibling.innerText = fileName
+    });
+</script>
+{% endblock %}
