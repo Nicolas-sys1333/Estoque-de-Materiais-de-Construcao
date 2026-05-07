@@ -64,18 +64,25 @@ def atualizar_item(item_id: int, nome: str, descricao_id: int, preco_unitario: f
     finally:
         conn.close()
 
-def _modificar_estoque(item_id, quantidade, tipo_movimentacao, usuario_id, observacao=""):
-    """Função interna para registrar movimentação e atualizar quantidade."""
-    conn = conectar_bd()
-    if not conn: return False, "Falha na conexão com o banco de dados."
+def _modificar_estoque(item_id, quantidade, tipo_movimentacao, usuario_id, observacao="", cursor=None):
+    """
+    Função interna para registrar movimentação e atualizar quantidade.
+    Pode receber um cursor existente para operar dentro de uma transação maior.
+    Se o cursor não for fornecido, cria e gerencia sua própria conexão.
+    """
+    conn = None
+    # Se não for passado um cursor, a função gerencia sua própria conexão
+    if cursor is None:
+        conn = conectar_bd()
+        if not conn: return False, "Falha na conexão com o banco de dados."
+        cursor = conn.cursor()
 
     try:
-        cursor = conn.cursor()
-        
         # 1. Verificar se o item existe e obter a quantidade atual
         cursor.execute("SELECT quantidade, nome FROM itens_estoque WHERE id = ?", (item_id,))
         resultado = cursor.fetchone()
         if not resultado:
+            # A função chamadora é responsável pelo rollback se um cursor foi passado
             return False, f"Erro: Item com ID {item_id} não encontrado."
         
         qtd_atual, nome_item = resultado
@@ -85,8 +92,10 @@ def _modificar_estoque(item_id, quantidade, tipo_movimentacao, usuario_id, obser
             if qtd_atual < quantidade:
                 return False, f"Erro: Estoque insuficiente para o item '{nome_item}'. Disponível: {qtd_atual}, Requisitado: {quantidade}"
             nova_quantidade = qtd_atual - quantidade
-        else: # entrada ou compra
+        elif tipo_movimentacao in ('entrada', 'compra'):
             nova_quantidade = qtd_atual + quantidade
+        else:
+            return False, f"Tipo de movimentação '{tipo_movimentacao}' inválido."
 
         # 3. Atualizar a quantidade na tabela de itens
         cursor.execute("UPDATE itens_estoque SET quantidade = ? WHERE id = ?", (nova_quantidade, item_id))
@@ -97,16 +106,21 @@ def _modificar_estoque(item_id, quantidade, tipo_movimentacao, usuario_id, obser
             (item_id, tipo_movimentacao, quantidade, usuario_id, observacao)
         )
         
-        conn.commit()
+        # Se a função gerencia sua própria conexão, ela faz o commit.
+        if conn:
+            conn.commit()
+        
         mensagem = f"Movimentação '{tipo_movimentacao}' de {quantidade} unidade(s) do item '{nome_item}' registrada com sucesso."
         registrar_log(usuario_id, f"MOVIMENTACAO_{tipo_movimentacao.upper()}", f"Item ID: {item_id}, Qtd: {quantidade}, Novo Saldo: {nova_quantidade}")
         return True, mensagem
 
     except Exception as e:
-        conn.rollback()
+        if conn: # Só faz rollback se a conexão foi criada aqui
+            conn.rollback()
         return False, f"Erro ao modificar estoque: {e}"
     finally:
-        conn.close()
+        if conn: # Só fecha a conexão se foi criada aqui
+            conn.close()
 
 def registrar_entrada(item_id, quantidade, usuario_id, observacao=""):
     return _modificar_estoque(item_id, quantidade, 'entrada', usuario_id, observacao)

@@ -2,11 +2,13 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, Response
 import pdfkit
 from database import criar_tabelas
+from datetime import datetime # Importar datetime
 import auth
 import estoque
 import relatorios
 import gerenciamento
 import pedidos
+import logistica # Importar o novo módulo de logística
 import excel_handler
 import os
 
@@ -261,10 +263,10 @@ def exportar_relatorio_obra_pdf(id):
         flash("Obra não encontrada.", "warning")
         return redirect(url_for('listar_obras_public'))
         
-    materiais_enviados = pedidos.get_materiais_por_obra(id)
+    despachos_da_obra = logistica.get_despachos_por_obra(id)
 
     # Renderiza um template HTML específico para o PDF
-    html_para_pdf = render_template('obra_relatorio_pdf.html', obra=obra, materiais=materiais_enviados)
+    html_para_pdf = render_template('obra_relatorio_pdf.html', obra=obra, despachos=despachos_da_obra, data_emissao=datetime.now())
 
     # Gera o PDF e o retorna como um download
     try:
@@ -345,13 +347,20 @@ def gerenciar_obras():
 
     if request.method == 'POST':
         nome = request.form['nome']
-        localizacao = request.form['localizacao']
-        sucesso, msg = pedidos.criar_obra(nome, localizacao, usuario['id'])
+        cep = request.form['cep']
+        endereco = request.form.get('endereco', '')
+        bairro = request.form.get('bairro', '')
+        cidade = request.form.get('cidade', '')
+        responsavel = request.form.get('responsavel', '')
+        status = request.form.get('status', 'Planejamento') # Default status
+        previsao_conclusao = request.form.get('previsao_conclusao') # Can be None
+        sucesso, msg = pedidos.criar_obra(nome, cep, endereco, bairro, cidade, responsavel, usuario['id'], status, previsao_conclusao)
         flash(msg, "success" if sucesso else "danger")
         return redirect(url_for('gerenciar_obras'))
 
-    lista_obras = pedidos.listar_obras()
-    return render_template('admin_obras.html', usuario=usuario, obras=lista_obras)
+    lista_obras = pedidos.listar_obras() # Adicionado para listar obras
+    lista_de_usuarios = auth.listar_usuarios() # Adicionado para listar usuários
+    return render_template('admin_obras.html', usuario=usuario, obras=lista_obras, usuarios_sistema=lista_de_usuarios)
 
 @app.route('/admin/obras/editar/<int:id>', methods=['GET', 'POST'])
 def editar_obra(id):
@@ -362,8 +371,35 @@ def editar_obra(id):
 
     if request.method == 'POST':
         nome = request.form['nome']
-        localizacao = request.form['localizacao']
-        sucesso, msg = pedidos.atualizar_obra(id, nome, localizacao, usuario['id'])
+        cep = request.form['cep']
+        endereco = request.form.get('endereco', '')
+        bairro = request.form.get('bairro', '')
+        cidade = request.form.get('cidade', '')
+        responsavel = request.form.get('responsavel', '')
+        previsao_conclusao = request.form.get('previsao_conclusao')
+
+        # Format previsao_conclusao to 'YYYY-MM-DD HH:MM:SS' if it's not empty
+        if previsao_conclusao:
+            try:
+                # Assuming input is 'YYYY-MM-DD', convert to 'YYYY-MM-DD 00:00:00' for consistency
+                previsao_conclusao = datetime.strptime(previsao_conclusao, '%Y-%m-%d').strftime('%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                previsao_conclusao = None # Invalid date format
+
+        # --- Permissão para alterar o status ---
+        novo_status = request.form.get('status')
+        can_change_status = (usuario['role'] == 'administracao' or usuario['username'] == obra['responsavel'])
+        
+        # If the user does not have permission to change status, and the new status is different from the original
+        # then we revert to the original status.
+        if not can_change_status and novo_status != obra['status']:
+            flash("Você não tem permissão para alterar o status desta obra.", "warning")
+            status_para_salvar = obra['status'] # Revert to the original status
+        else:
+            status_para_salvar = novo_status
+        # --- End of status change permission ---
+
+        sucesso, msg = pedidos.atualizar_obra(id, nome, cep, endereco, bairro, cidade, responsavel, usuario['id'], status_para_salvar, previsao_conclusao)
         flash(msg, "success" if sucesso else "danger")
         return redirect(url_for('gerenciar_obras'))
 
@@ -371,7 +407,18 @@ def editar_obra(id):
     if not obra:
         flash("Obra não encontrada.", "warning")
         return redirect(url_for('gerenciar_obras'))
-    return render_template('admin_obra_editar.html', usuario=usuario, obra=obra)
+    lista_de_usuarios = auth.listar_usuarios() # Adicionado para listar usuários
+    
+    # Format previsao_conclusao for the date input field
+    if obra['previsao_conclusao']:
+        try:
+            obra['previsao_conclusao_formatted'] = datetime.strptime(obra['previsao_conclusao'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d')
+        except ValueError:
+            obra['previsao_conclusao_formatted'] = ''
+    else:
+        obra['previsao_conclusao_formatted'] = ''
+
+    return render_template('admin_obra_editar.html', usuario=usuario, obra=obra, usuarios_sistema=lista_de_usuarios)
 
 @app.route('/admin/pedidos')
 def gerenciar_pedidos():
@@ -391,7 +438,7 @@ def aprovar_pedido(id):
         return redirect(url_for('dashboard'))
     
     sucesso, msg = pedidos.aprovar_pedido(id, usuario['id'])
-    # flash(msg, "success" if sucesso else "danger") # Removido para não poluir a tela
+    flash(msg, "success" if sucesso else "danger")
     return redirect(url_for('gerenciar_pedidos'))
 
 @app.route('/admin/pedidos/rejeitar', methods=['POST'])
@@ -426,23 +473,90 @@ def detalhes_obra(id):
     if not usuario: return redirect(url_for('login'))
 
     if request.method == 'POST':
-        item_id = int(request.form['item_id'])
-        quantidade = int(request.form['quantidade'])
+        item_ids = request.form.getlist('item_id[]')
+        quantidades = request.form.getlist('quantidade[]')
         justificativa = request.form['justificativa']
-        sucesso, msg = pedidos.criar_pedido_saida(item_id, quantidade, id, justificativa, usuario['id'])
+
+        itens_para_pedir = []
+        for i in range(len(item_ids)):
+            try:
+                item_id = int(item_ids[i])
+                quantidade = int(quantidades[i])
+                if item_id > 0 and quantidade > 0:
+                    itens_para_pedir.append({'item_id': item_id, 'quantidade': quantidade})
+            except (ValueError, IndexError):
+                continue # Ignora linhas inválidas ou incompletas
+
+        if not itens_para_pedir:
+            flash("Nenhum item válido foi adicionado à requisição.", "danger")
+            return redirect(url_for('detalhes_obra', id=id))
+
+        sucesso, msg = pedidos.criar_pedido_saida_com_itens(itens_para_pedir, id, justificativa, usuario['id'])
         flash(msg, "success" if sucesso else "danger")
         return redirect(url_for('detalhes_obra', id=id))
 
     obra = pedidos.get_obra(id)
-    materiais_enviados = pedidos.get_materiais_por_obra(id)
+    if not obra:
+        flash("Obra não encontrada.", "warning")
+        return redirect(url_for('listar_obras_public'))
+        
+    despachos_da_obra = logistica.get_despachos_por_obra(id)
     
+       
     # Calcula os totais para os cards
-    total_quantidade_enviada = sum(m['quantidade'] for m in materiais_enviados)
-    total_solicitacoes = len(materiais_enviados)
+    total_quantidade_enviada = sum(item['quantidade'] for despacho in despachos_da_obra for item in despacho['itens'])
+    total_despachos = len(despachos_da_obra)
 
     itens_estoque = estoque.listar_itens()
-    return render_template('obra_detalhes.html', usuario=usuario, obra=obra, materiais=materiais_enviados, itens_estoque=itens_estoque,
-                           total_quantidade_enviada=total_quantidade_enviada, total_solicitacoes=total_solicitacoes)
+    return render_template('obra_detalhes.html', usuario=usuario, obra=obra, despachos=despachos_da_obra, 
+                           itens_estoque=itens_estoque, total_quantidade_enviada=total_quantidade_enviada, total_solicitacoes=total_despachos)
+
+@app.route('/logistica', methods=['GET', 'POST'])
+def gerenciar_logistica():
+    usuario = session.get('usuario')
+    if not usuario or not auth.tem_permissao(usuario['role'], 'registrar_saida'): # Apenas quem pode registrar saída pode gerenciar logística
+        flash("Acesso negado. Você não tem permissão para gerenciar logística.", "danger")
+        return redirect(url_for('dashboard'))
+
+    # A lógica POST foi removida, pois os despachos são criados na aprovação do pedido.
+    
+    # GET request: listar o histórico de despachos já criados
+    despachos_registrados = logistica.listar_despachos()
+    return render_template('logistica.html', usuario=usuario, despachos_registrados=despachos_registrados)
+
+@app.route('/logistica/detalhes/<int:id>', methods=['GET', 'POST'])
+def detalhes_despacho(id):
+    usuario = session.get('usuario')
+    if not usuario or not auth.tem_permissao(usuario['role'], 'registrar_saida'): # Apenas quem pode registrar saída pode ver detalhes
+        flash("Acesso negado.", "danger")
+        return redirect(url_for('dashboard'))
+
+    despacho = logistica.get_despacho(id)
+    if not despacho:
+        flash("Despacho não encontrado.", "warning")
+        return redirect(url_for('gerenciar_logistica'))
+
+    if request.method == 'POST':
+        novo_status = request.form['status_entrega']
+        data_entrega = request.form.get('data_entrega') # Pode ser vazio se o status não for 'Entregue'
+        nome_recebedor_form = request.form.get('nome_recebedor_atualizado') # Novo campo
+        
+        # Novos campos para o entregador
+        nome_entregador = request.form.get('nome_entregador')
+        telefone_entregador = request.form.get('telefone_entregador')
+
+        # Permissão para alterar status: Administrador ou o usuário que criou o despacho
+        can_update_status = (usuario['role'] == 'administracao' or usuario['id'] == despacho['usuario_despacho_id'])
+
+        if not can_update_status:
+            flash("Você não tem permissão para alterar o status deste despacho.", "danger")
+            return redirect(url_for('detalhes_despacho', id=id))
+
+        sucesso, msg = logistica.atualizar_status_entrega(id, novo_status, data_entrega, nome_recebedor_form, usuario['id'], nome_entregador, telefone_entregador)
+        flash(msg, "success" if sucesso else "danger")
+        return redirect(url_for('detalhes_despacho', id=id))
+
+    return render_template('despacho_detalhes.html', usuario=usuario, despacho=despacho)
 
 @app.route('/admin/descricoes', methods=['GET', 'POST'])
 def gerenciar_descricoes():

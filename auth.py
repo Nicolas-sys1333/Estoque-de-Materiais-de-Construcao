@@ -7,8 +7,8 @@ from logs import registrar_log
 # Mapeamento de permissões por perfil
 PERMISSOES = {
     'administracao': ['all', 'cadastrar_item'],
-    'engenheiro': ['ver_estoque', 'requisitar_saida', 'ver_relatorios'],
-    'encarregado': ['ver_estoque', 'registrar_entrada', 'registrar_saida', 'cadastrar_item', 'ver_relatorios'],
+    'engenheiro': ['ver_estoque', 'requisitar_saida', 'ver_relatorios', 'registrar_saida'], # Adicionado 'registrar_saida' para acesso à logística
+    'encarregado': ['ver_estoque', 'registrar_entrada', 'registrar_saida', 'cadastrar_item', 'ver_relatorios', 'gerenciar_logistica'], # Adicionado 'gerenciar_logistica'
     'comercial': ['ver_estoque', 'ver_relatorios']
 }
 

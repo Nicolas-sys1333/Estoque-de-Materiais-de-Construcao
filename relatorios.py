@@ -1,11 +1,12 @@
 # relatorios.py
 from database import conectar_bd
+from datetime import datetime
 
 def get_todas_movimentacoes(page=1, per_page=15):
     """Busca todas as movimentações do estoque de forma paginada."""
     conn = conectar_bd()
     if not conn:
-        return []
+        return {"movimentacoes": [], "total": 0, "page": page, "per_page": per_page}
 
     cursor = conn.cursor()
     cursor.execute("""
@@ -23,13 +24,22 @@ def get_todas_movimentacoes(page=1, per_page=15):
         ORDER BY m.data DESC
         LIMIT ? OFFSET ?
     """, (per_page, (page - 1) * per_page))
-    movimentacoes = [dict(row) for row in cursor.fetchall()]
+    movimentacoes_rows = cursor.fetchall()
 
     # Pega o total de registros para calcular o total de páginas
     cursor.execute("SELECT COUNT(*) as total FROM movimentacoes")
     total = cursor.fetchone()['total']
 
     conn.close()
+
+    # Converte as strings de data para objetos datetime para uso no template
+    movimentacoes = []
+    for row in movimentacoes_rows:
+        mov_dict = dict(row)
+        if mov_dict.get('data'):
+            mov_dict['data'] = datetime.strptime(mov_dict['data'], '%Y-%m-%d %H:%M:%S')
+        movimentacoes.append(mov_dict)
+
     return {
         "movimentacoes": movimentacoes,
         "total": total,
